@@ -30,7 +30,7 @@ function RecipeApp() {
     if (!error && recipesData) {
       const formatted = recipesData.map(r => ({
         ...r,
-        versions: (r.recipe_versions || []).sort((a: any, b: any) => b.version_number - a.version_number)
+        versions: (r.recipe_versions || []).sort((a: any, b: any) => a.version_number - b.version_number)
       })) as Recipe[];
       setRecipes(formatted);
     }
