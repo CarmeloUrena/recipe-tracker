@@ -2,32 +2,37 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Recipe } from '@/types';
-import { X, Plus, Trash2, Save, Layers } from 'lucide-react';
+import { Recipe, RecipeVersion } from '@/types';
+import { X, Plus, Trash2, Save } from 'lucide-react';
 
 interface Props {
   recipe?: Recipe; 
+  activeVersion?: RecipeVersion; // NEW: The specific version we want to overwrite
   onClose: () => void;
   onRefresh: () => void;
 }
 
-export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
+export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }: Props) {
   const [name, setName] = useState(recipe?.name || '');
   const [ingredients, setIngredients] = useState<string[]>(['']);
   const [directions, setDirections] = useState<string[]>(['']);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isNewVersion, setIsNewVersion] = useState(true); // Default to creating a new version
 
-  // PRE-FILL LOGIC: If editing an existing recipe, load the latest version's data
   useEffect(() => {
-    if (recipe && recipe.versions.length > 0) {
-      const latest = recipe.versions[0]; // Gets the most recent version
+    // If we have an active version, fill the form with its data for editing
+    if (activeVersion) {
+      setIngredients(activeVersion.ingredients);
+      setDirections(activeVersion.directions);
+      setNotes(activeVersion.notes || '');
+    } else if (recipe && recipe.versions.length > 0) {
+      // If we are adding a NEW version, pre-fill with the latest data as a starting point
+      const latest = [...recipe.versions].sort((a,b) => b.version_number - a.version_number)[0];
       setIngredients(latest.ingredients);
       setDirections(latest.directions);
-      setNotes(latest.notes || '');
+      setNotes('');
     }
-  }, [recipe]);
+  }, [activeVersion, recipe]);
 
   const addItem = (setter: any) => setter((prev: string[]) => [...prev, '']);
   const updateItem = (setter: any, index: number, value: string) => {
@@ -37,18 +42,16 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
       return next;
     });
   };
-  const removeItem = (setter: any, index: number) => {
-    setter((prev: string[]) => prev.filter((_, i) => i !== index));
-  };
+  const removeItem = (setter: any, index: number) => setter((prev: string[]) => prev.filter((_, i) => i !== index));
 
   const handleSave = async () => {
-    if (!name.trim()) return alert("Please enter a name");
+    if (!name.trim()) return alert("Enter a name");
     setLoading(true);
 
     try {
       let recipeId = recipe?.id;
 
-      // 1. Handle Recipe Identity
+      // Update Recipe Name
       if (!recipeId) {
         const { data: newR, error: re } = await supabase.from('recipes').insert([{ name }]).select().single();
         if (re) throw re;
@@ -57,24 +60,26 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
         await supabase.from('recipes').update({ name }).eq('id', recipeId);
       }
 
-      // 2. Handle Versioning logic
-      if (isNewVersion || !recipe) {
-        const nextVer = recipe ? Math.max(...recipe.versions.map(v => v.version_number)) + 1 : 1;
-        await supabase.from('recipe_versions').insert([{
-          recipe_id: recipeId,
-          version_number: nextVer,
-          ingredients: ingredients.filter(i => i.trim() !== ''),
-          directions: directions.filter(d => d.trim() !== ''),
-          notes
-        }]);
+      const versionData = {
+        ingredients: ingredients.filter(i => i.trim() !== ''),
+        directions: directions.filter(d => d.trim() !== ''),
+        notes
+      };
+
+      if (activeVersion) {
+        // OVERWRITE the specific version we were looking at
+        const { error: vError } = await supabase
+          .from('recipe_versions')
+          .update(versionData)
+          .eq('id', activeVersion.id);
+        if (vError) throw vError;
       } else {
-        // OVERWRITE logic: Update the most recent version instead of making a new one
-        const latestId = recipe.versions[0].id;
-        await supabase.from('recipe_versions').update({
-          ingredients: ingredients.filter(i => i.trim() !== ''),
-          directions: directions.filter(d => d.trim() !== ''),
-          notes
-        }).eq('id', latestId);
+        // CREATE a brand new version
+        const nextVer = recipe ? Math.max(...recipe.versions.map(v => v.version_number)) + 1 : 1;
+        const { error: vError } = await supabase
+          .from('recipe_versions')
+          .insert([{ ...versionData, recipe_id: recipeId, version_number: nextVer }]);
+        if (vError) throw vError;
       }
 
       onRefresh();
@@ -90,54 +95,31 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={onClose} />
-      
       <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">{recipe ? 'Edit Recipe' : 'New Recipe'}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full"><X className="w-6 h-6 text-slate-400" /></button>
+          <h2 className="text-2xl font-semibold">
+            {activeVersion ? `Editing Version ${activeVersion.version_number}` : 'Add New Version'}
+          </h2>
+          <button onClick={onClose} className="p-2"><X className="w-6 h-6 text-slate-400" /></button>
         </div>
-
         <div className="overflow-y-auto p-8 space-y-8">
-          {/* Settings Toggle for Existing Recipes */}
-          {recipe && (
-            <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-2xl">
-              <Layers className="w-5 h-5 text-blue-600" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-blue-900">Save Preference</p>
-                <p className="text-xs text-blue-700">Do you want to overwrite current data or create a new version?</p>
-              </div>
-              <select 
-                value={isNewVersion ? 'new' : 'edit'}
-                onChange={(e) => setIsNewVersion(e.target.value === 'new')}
-                className="bg-white border-none text-sm font-bold rounded-lg px-3 py-2 text-blue-600 outline-none shadow-sm"
-              >
-                <option value="new">Create v{Math.max(...recipe.versions.map(v => v.version_number)) + 1}</option>
-                <option value="edit">Overwrite Current v{recipe.versions[0].version_number}</option>
-              </select>
-            </div>
-          )}
-
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Title</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className="w-full text-3xl font-medium border-none focus:ring-0 p-0 outline-none" />
           </div>
-
           <div className="grid md:grid-cols-2 gap-12">
             <Section label="Ingredients" items={ingredients} setter={setIngredients} addItem={addItem} updateItem={updateItem} removeItem={removeItem} />
             <Section label="Method" items={directions} setter={setDirections} addItem={addItem} updateItem={updateItem} removeItem={removeItem} isTextArea />
           </div>
-
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Notes</label>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full text-sm bg-slate-50 border-none rounded-2xl p-4 outline-none" />
           </div>
         </div>
-
         <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-4">
           <button onClick={onClose} className="px-6 py-2.5 text-sm font-medium text-slate-500">Cancel</button>
-          <button onClick={handleSave} disabled={loading} className="flex items-center gap-2 px-8 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 shadow-lg">
-            <Save className="w-4 h-4" />
-            {loading ? 'Saving...' : 'Save Changes'}
+          <button onClick={handleSave} disabled={loading} className="px-8 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 shadow-lg">
+            {loading ? 'Saving...' : activeVersion ? 'Update Current Version' : 'Save as New Version'}
           </button>
         </div>
       </div>
@@ -145,7 +127,6 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
   );
 }
 
-// Helper component for UI cleanliness
 function Section({ label, items, setter, addItem, updateItem, removeItem, isTextArea = false }: any) {
   return (
     <div className="space-y-4">
