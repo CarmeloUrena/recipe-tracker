@@ -117,7 +117,7 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
                 <div className="space-y-8">
                   {currentVersion.directions.map((step, i) => (
                     <div key={i} className="flex gap-6 group">
-                      <span className="text-4xl font-light text-slate-100 group-hover:text-blue-50 group-hover:scale-110 transition-all tabular-nums">
+                      <span className="text-4xl font-light text-slate-300 group-hover:text-blue-50 group-hover:scale-110 transition-all tabular-nums">
                         {(i + 1).toString().padStart(2, '0')}
                       </span>
                       <p className="text-slate-700 leading-relaxed pt-2">{step}</p>
