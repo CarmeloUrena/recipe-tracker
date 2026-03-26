@@ -103,7 +103,20 @@ function RecipeApp() {
     onRefresh={fetchRecipes} // <--- Add this line!
   />
 )}
-      {isAdding && <RecipeForm onClose={() => setIsAdding(false)} onRefresh={fetchRecipes} />}
+{isAdding && (
+  <RecipeForm 
+    recipe={selectedRecipe} // This passes the data if editing
+    onClose={() => {
+      setIsAdding(false);
+      setSelectedRecipe(null); // Clear the selection so it doesn't "stick"
+    }} 
+    onRefresh={() => {
+      fetchRecipes(); // This triggers the instant reload
+      setIsAdding(false);
+      setSelectedRecipe(null);
+    }} 
+  />
+)}
     </main>
   );
 }
