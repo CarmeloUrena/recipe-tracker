@@ -63,7 +63,11 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
 
       if (activeVersion) {
         // OVERWRITE vX
-        await supabase.from('recipe_versions').update(versionPayload).eq('id', activeVersion.id);
+        await supabase.from('recipe_versions').update({
+          ingredients: ingredients.filter(i => i.trim() !== ''),
+          directions: directions.filter(d => d.trim() !== ''),
+          notes // <--- Ensure this is here!
+        }).eq('id', activeVersion.id);
       } else {
         // CREATE v(Latest + 1)
         const nextVer = recipe ? Math.max(...recipe.versions.map(v => v.version_number)) + 1 : 1;
