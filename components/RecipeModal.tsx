@@ -17,7 +17,7 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
   // Sort versions ascending (v1, v2, v3...) for the tabs
   const sortedVersions = [...recipe.versions].sort((a, b) => a.version_number - b.version_number);
   
-  const [activeVersionIdx, setActiveVersionIdx] = useState(sortedVersions.length - 1);
+  const [activeVersionIdx, setActiveVersionIdx] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const currentVersion = sortedVersions[activeVersionIdx];
 
