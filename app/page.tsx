@@ -95,7 +95,14 @@ function RecipeApp() {
         </div>
       </div>
 
-      {selectedRecipe && <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} isAdmin={isAdmin} />}
+{selectedRecipe && (
+  <RecipeModal 
+    recipe={selectedRecipe} 
+    onClose={() => setSelectedRecipe(null)} 
+    isAdmin={isAdmin}
+    onRefresh={fetchRecipes} // <--- Add this line!
+  />
+)}
       {isAdding && <RecipeForm onClose={() => setIsAdding(false)} onRefresh={fetchRecipes} />}
     </main>
   );
