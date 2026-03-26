@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Recipe, RecipeVersion } from '@/types';
+import { Recipe } from '@/types';
 import { X, Plus, Trash2, Save } from 'lucide-react';
 
 interface Props {
-  recipe?: Recipe; // If provided, we are adding a version to an existing recipe
+  recipe?: Recipe; // If provided, we are editing/adding a version to an existing recipe
   onClose: () => void;
-  onRefresh: () => void; // To reload the list after saving
+  onRefresh: () => void;
 }
 
 export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
+  // If editing, start with the existing name. If new, start blank.
   const [name, setName] = useState(recipe?.name || '');
   const [ingredients, setIngredients] = useState<string[]>(['']);
   const [directions, setDirections] = useState<string[]>(['']);
@@ -33,12 +34,14 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
   };
 
   const handleSave = async () => {
+    if (!name.trim()) return alert("Please enter a recipe name");
     setLoading(true);
+
     try {
       let recipeId = recipe?.id;
 
-      // 1. If it's a new recipe, create the recipe entry first
       if (!recipeId) {
+        // CASE A: Create a brand new recipe
         const { data: newRecipe, error: rError } = await supabase
           .from('recipes')
           .insert([{ name }])
@@ -47,12 +50,23 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
         
         if (rError) throw rError;
         recipeId = newRecipe.id;
+      } else {
+        // CASE B: Update the name of the existing recipe
+        const { error: uError } = await supabase
+          .from('recipes')
+          .update({ name })
+          .eq('id', recipeId);
+        
+        if (uError) throw uError;
       }
 
-      // 2. Determine the version number
-      const versionNum = recipe ? (recipe.versions[0]?.version_number || 0) + 1 : 1;
+      // Determine the next version number
+      // If we are adding to an existing recipe, look at the highest version and add 1
+      const versionNum = recipe && recipe.versions.length > 0 
+        ? Math.max(...recipe.versions.map(v => v.version_number)) + 1 
+        : 1;
 
-      // 3. Insert the version
+      // Insert the version details
       const { error: vError } = await supabase.from('recipe_versions').insert([
         {
           recipe_id: recipeId,
@@ -69,21 +83,21 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
       onClose();
     } catch (err) {
       console.error('Error saving:', err);
-      alert('Something went wrong. Check the console.');
+      alert('Error saving recipe. Check console for details.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={onClose} />
       
       <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
           <h2 className="text-2xl font-semibold tracking-tight">
-            {recipe ? `Add Version to ${recipe.name}` : 'New Recipe'}
+            {recipe ? `Editing: ${recipe.name}` : 'New Recipe'}
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
             <X className="w-6 h-6 text-slate-400" />
@@ -92,22 +106,22 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
 
         {/* Form Body */}
         <div className="overflow-y-auto p-8 space-y-10">
-          {/* Recipe Name (Only for New Recipes) */}
-          {!recipe && (
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Recipe Title</label>
-              <input 
-                type="text"
-                placeholder="e.g. Grandma's Famous Lasagna"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full text-3xl font-medium border-none focus:ring-0 p-0 placeholder:text-slate-200"
-              />
-            </div>
-          )}
+          {/* Recipe Name Input */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-slate-400">
+              {recipe ? 'Rename Recipe' : 'Recipe Title'}
+            </label>
+            <input 
+              type="text"
+              placeholder="e.g. Sourdough Bread"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full text-3xl font-medium border-none focus:ring-0 p-0 placeholder:text-slate-200 outline-none"
+            />
+          </div>
 
           <div className="grid md:grid-cols-2 gap-12">
-            {/* Ingredients Section */}
+            {/* Ingredients */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Ingredients</label>
@@ -121,10 +135,10 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
                     <input 
                       value={ing}
                       onChange={(e) => updateItem(setIngredients, i, e.target.value)}
-                      placeholder="Add an ingredient..."
-                      className="flex-1 text-sm bg-slate-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 p-2"
+                      placeholder="Add ingredient..."
+                      className="flex-1 text-sm bg-slate-50 border-none rounded-lg p-2 focus:ring-2 focus:ring-blue-100 outline-none"
                     />
-                    <button onClick={() => removeItem(setIngredients, i)} className="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-red-500 transition-all">
+                    <button onClick={() => removeItem(setIngredients, i)} className="p-2 text-slate-300 hover:text-red-500">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -132,7 +146,7 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
               </div>
             </div>
 
-            {/* Directions Section */}
+            {/* Directions */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Directions</label>
@@ -147,11 +161,11 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
                     <textarea 
                       value={step}
                       onChange={(e) => updateItem(setDirections, i, e.target.value)}
-                      placeholder="Add a step..."
+                      placeholder="Add step..."
                       rows={1}
-                      className="flex-1 text-sm bg-slate-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 p-2 resize-none"
+                      className="flex-1 text-sm bg-slate-50 border-none rounded-lg p-2 focus:ring-2 focus:ring-blue-100 outline-none resize-none"
                     />
-                    <button onClick={() => removeItem(setDirections, i)} className="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-red-500 transition-all">
+                    <button onClick={() => removeItem(setDirections, i)} className="p-2 text-slate-300 hover:text-red-500">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -160,34 +174,29 @@ export default function RecipeForm({ recipe, onClose, onRefresh }: Props) {
             </div>
           </div>
 
-          {/* Notes Section */}
+          {/* Notes */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Personal Notes</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Notes for this version</label>
             <textarea 
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Flavor notes, temperature adjustments, or serving suggestions..."
-              rows={4}
-              className="w-full text-sm bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-100 p-4"
+              placeholder="What changed in this version? Better flavor? Higher temp?"
+              rows={3}
+              className="w-full text-sm bg-slate-50 border-none rounded-2xl p-4 focus:ring-2 focus:ring-blue-100 outline-none"
             />
           </div>
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer */}
         <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-4">
-          <button 
-            onClick={onClose}
-            className="px-6 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700"
-          >
-            Cancel
-          </button>
+          <button onClick={onClose} className="px-6 py-2.5 text-sm font-medium text-slate-500">Cancel</button>
           <button 
             onClick={handleSave}
             disabled={loading}
-            className="flex items-center gap-2 px-8 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 disabled:opacity-50 transition-all shadow-lg shadow-slate-200"
+            className="flex items-center gap-2 px-8 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 disabled:opacity-50 shadow-lg"
           >
             <Save className="w-4 h-4" />
-            {loading ? 'Saving...' : 'Save Recipe'}
+            {loading ? 'Saving...' : 'Save as New Version'}
           </button>
         </div>
       </div>
