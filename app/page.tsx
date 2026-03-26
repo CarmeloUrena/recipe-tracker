@@ -8,7 +8,7 @@ import RecipeModal from '@/components/RecipeModal';
 import RecipeForm from '@/components/RecipeForm';
 import { Search, Plus } from 'lucide-react';
 
-export default function Home() {
+export default function RecipeApp() {
   const searchParams = useSearchParams();
   const isAdmin = searchParams.get('admin') === 'true';
 
@@ -130,5 +130,17 @@ export default function Home() {
         />
       )}
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+        <div className="text-slate-400 animate-pulse font-medium">Loading Recipes...</div>
+      </div>
+    }>
+      <RecipeApp />
+    </Suspense>
   );
 }
