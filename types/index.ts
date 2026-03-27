@@ -5,12 +5,14 @@ export interface RecipeVersion {
   ingredients: string[];
   directions: string[];
   notes: string;
+  version_origin: string | null;
   created_at: string;
 }
 
 export interface Recipe {
   id: string;
   name: string;
+  origin: string | null;
   created_at: string;
   versions: RecipeVersion[];
 }
