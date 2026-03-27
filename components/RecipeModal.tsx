@@ -90,7 +90,7 @@ function CookMode({ recipe, version, onClose }: { recipe: Recipe; version: Recip
             <div className="space-y-8">
               {version.directions.map((step, i) => (
                 <div key={i} className="flex gap-5">
-                  <span className="text-3xl font-light text-slate-200 tabular-nums flex-shrink-0 leading-snug mt-0.5">
+                  <span className="text-3xl font-light text-slate-500 tabular-nums flex-shrink-0 leading-snug mt-0.5">
                     {(i + 1).toString().padStart(2, '0')}
                   </span>
                   <p className="text-slate-800 leading-relaxed text-base">{step}</p>
@@ -206,13 +206,23 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
                 v{currentVersion.version_number}
               </span>
             </div>
-            {/* Recipe-level origin */}
-            {recipe.origin && (
-              <p className="text-slate-400 text-sm italic">{recipe.origin}</p>
-            )}
-            {/* Version-level origin — only shown if different from recipe origin */}
-            {currentVersion.version_origin && currentVersion.version_origin !== recipe.origin && (
-              <p className="text-amber-500 text-xs italic">v{currentVersion.version_number}: {currentVersion.version_origin}</p>
+            {/* Source */}
+            {currentVersion.source_label && (
+              <p className="text-slate-400 text-xs font-medium">
+                Source:{' '}
+                {currentVersion.source_url ? (
+                  <a
+                    href={currentVersion.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-amber-600 underline underline-offset-2 hover:text-amber-700 transition-colors"
+                  >
+                    {currentVersion.source_label}
+                  </a>
+                ) : (
+                  <span className="text-slate-600 italic">{currentVersion.source_label}</span>
+                )}
+              </p>
             )}
             <p className="text-slate-400 text-xs font-medium pt-0.5">
               Updated {new Date(currentVersion.created_at).toLocaleDateString()}
@@ -338,7 +348,7 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
               <div className="space-y-4">
                 {currentVersion.directions.map((step, i) => (
                   <div key={i} className="flex gap-4">
-                    <span className="text-2xl font-light text-slate-200 tabular-nums flex-shrink-0 leading-snug mt-0.5">
+                    <span className="text-2xl font-light text-slate-400 tabular-nums flex-shrink-0 leading-snug mt-0.5">
                       {(i + 1).toString().padStart(2, '0')}
                     </span>
                     <p className="text-slate-700 leading-relaxed text-sm">{step}</p>
