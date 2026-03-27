@@ -56,10 +56,10 @@ function RecipeApp() {
 
   return (
     <main className="min-h-screen text-slate-900">
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-12">
 
         {/* Header */}
-        <header className="sticky top-0 z-30 bg-[#f5f0e8]/90 backdrop-blur-md pt-4 pb-8 border-b-2 border-slate-900 mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <header className="sticky top-0 z-30 bg-[#f5f0e8]/90 backdrop-blur-md pt-4 pb-5 md:pb-8 border-b-2 border-slate-900 mb-6 md:mb-12 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
           <div>
             <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Recipes.</h1>
             <p className="text-slate-500 text-sm mt-1 font-medium">Your personal digital cookbook.</p>
@@ -92,11 +92,11 @@ function RecipeApp() {
         </header>
 
         {/* Recipe Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredRecipes.map((recipe) => (
             <div
               key={recipe.id}
-              className="group relative bg-white rounded-xl border-2 border-slate-900 cursor-pointer aspect-[3/4] flex flex-col"
+              className="group relative bg-white rounded-xl border-2 border-slate-900 cursor-pointer flex flex-col"
               style={{ boxShadow: '4px 4px 0 #0f172a', transition: 'transform 0.12s, box-shadow 0.12s' }}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLElement).style.transform = 'translate(-2px, -2px)';
@@ -115,27 +115,27 @@ function RecipeApp() {
                     setSelectedRecipe(recipe);
                     setIsAdding(true);
                   }}
-                  className="absolute top-4 right-4 z-20 p-2 bg-white border-2 border-slate-900 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-amber-50 text-slate-500 hover:text-amber-700"
+                  className="absolute top-3 right-3 z-20 p-1.5 bg-white border-2 border-slate-900 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-amber-50 text-slate-500 hover:text-amber-700"
                   style={{ boxShadow: '2px 2px 0 #0f172a' }}
                 >
-                  <Edit3 className="w-3.5 h-3.5" />
+                  <Edit3 className="w-3 h-3" />
                 </button>
               )}
 
               {/* Clickable area */}
               <div
                 onClick={() => setSelectedRecipe(recipe)}
-                className="p-7 flex-1 flex flex-col justify-between"
+                className="p-5 flex flex-col gap-6"
               >
-                <h2 className="text-xl font-semibold tracking-tight leading-tight text-slate-900">
+                <h2 className="text-base font-semibold tracking-tight leading-snug text-slate-900 pr-6">
                   {recipe.name}
                 </h2>
-                <div className="flex items-center justify-between mt-auto">
+                <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     {recipe.versions.length} {recipe.versions.length === 1 ? 'Ver' : 'Vers'}
                   </span>
-                  <div className="w-8 h-8 rounded-md border-2 border-slate-900 flex items-center justify-center group-hover:bg-slate-900 transition-colors">
-                    <Plus className="w-4 h-4 text-slate-900 group-hover:text-white" />
+                  <div className="w-7 h-7 rounded-md border-2 border-slate-900 flex items-center justify-center group-hover:bg-slate-900 transition-colors">
+                    <Plus className="w-3.5 h-3.5 text-slate-900 group-hover:text-white" />
                   </div>
                 </div>
               </div>
