@@ -190,15 +190,20 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4" style={{WebkitOverflowScrolling: "touch"}}>
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
 
       <div
-        className="relative w-full md:max-w-5xl h-[92vh] md:h-auto md:max-h-[90vh] bg-white rounded-t-2xl md:rounded-2xl border-2 border-b-0 md:border-b-2 border-slate-900 flex flex-col overflow-hidden"
+        className="relative w-full md:max-w-5xl h-[92dvh] md:h-auto md:max-h-[90vh] bg-white rounded-t-2xl md:rounded-2xl border-2 border-b-0 md:border-b-2 border-slate-900 flex flex-col overflow-hidden overscroll-none"
         style={{ boxShadow: '8px 8px 0 #0f172a' }}
       >
+        {/* Mobile drag handle */}
+        <div className="flex justify-center pt-3 pb-1 md:hidden bg-white flex-shrink-0">
+          <div className="w-10 h-1 rounded-full bg-slate-300" />
+        </div>
+
         {/* Header */}
-        <div className="px-4 md:px-10 py-4 md:py-7 border-b-2 border-slate-900 flex items-start justify-between bg-white sticky top-0 z-10">
+        <div className="px-4 md:px-10 py-3 md:py-7 border-b-2 border-slate-900 flex items-start justify-between bg-white flex-shrink-0 z-10">
           <div className="space-y-0.5">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-xl md:text-3xl font-semibold tracking-tight text-slate-900">{recipe.name}</h2>
@@ -296,7 +301,7 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
         </div>
 
         {/* Version tabs */}
-        <div className="px-4 md:px-10 py-3 bg-[#f5f0e8] border-b-2 border-slate-900 flex items-center justify-between sticky top-[80px] md:top-[104px] z-10">
+        <div className="px-4 md:px-10 py-3 bg-[#f5f0e8] border-b-2 border-slate-900 flex items-center justify-between sticky top-[72px] md:top-[104px] z-10">
           <div className="flex gap-2 overflow-x-auto">
             {sortedVersions.map((v, idx) => (
               <button
