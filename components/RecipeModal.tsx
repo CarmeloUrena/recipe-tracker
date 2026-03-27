@@ -55,10 +55,10 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
         style={{ boxShadow: '8px 8px 0 #0f172a' }}
       >
         {/* Header */}
-        <div className="px-10 py-7 border-b-2 border-slate-900 flex items-start justify-between bg-white sticky top-0 z-10">
+        <div className="px-5 md:px-10 py-5 md:py-7 border-b-2 border-slate-900 flex items-start justify-between bg-white sticky top-0 z-10">
           <div className="space-y-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-3xl font-semibold tracking-tight text-slate-900">{recipe.name}</h2>
+              <h2 className="text-xl md:text-3xl font-semibold tracking-tight text-slate-900">{recipe.name}</h2>
               <span className="px-2.5 py-1 bg-slate-900 text-white rounded-md text-[10px] font-bold uppercase tracking-widest">
                 v{currentVersion.version_number}
               </span>
@@ -109,7 +109,7 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
         </div>
 
         {/* Version tabs */}
-        <div className="px-10 py-3 bg-[#f5f0e8] border-b-2 border-slate-900 flex items-center justify-between sticky top-[104px] z-10">
+        <div className="px-5 md:px-10 py-3 bg-[#f5f0e8] border-b-2 border-slate-900 flex items-center justify-between sticky top-[88px] md:top-[104px] z-10">
           <div className="flex gap-2 overflow-x-auto">
             {sortedVersions.map((v, idx) => (
               <button
@@ -139,12 +139,12 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto p-10 grid md:grid-cols-5 gap-16 flex-1 bg-white">
+        <div className="overflow-y-auto p-5 md:p-10 grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-16 flex-1 bg-white">
 
           {/* Ingredients */}
-          <div className="md:col-span-2 space-y-6">
+          <div className="md:col-span-2 space-y-4">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Ingredients</h3>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {currentVersion.ingredients.map((ing, i) => (
                 <li key={i} className="flex items-start gap-3 text-slate-700 leading-relaxed text-sm">
                   <div className="w-1.5 h-1.5 rounded-full bg-slate-900 mt-2 flex-shrink-0" />
@@ -155,29 +155,27 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
           </div>
 
           {/* Directions & Notes */}
-          <div className="md:col-span-3 space-y-12">
-            <div className="space-y-6">
+          <div className="md:col-span-3 space-y-8">
+            <div className="space-y-4">
               <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Method</h3>
-              <div className="space-y-8">
+              <div className="space-y-4">
                 {currentVersion.directions.map((step, i) => (
-                  <div key={i} className="flex gap-6">
-                    <span className="text-4xl font-light text-slate-200 tabular-nums flex-shrink-0">
+                  <div key={i} className="flex gap-4">
+                    <span className="text-2xl font-light text-slate-200 tabular-nums flex-shrink-0 leading-snug mt-0.5">
                       {(i + 1).toString().padStart(2, '0')}
                     </span>
-                    <p className="text-slate-700 leading-relaxed pt-2 text-sm">{step}</p>
+                    <p className="text-slate-700 leading-relaxed text-sm">{step}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {currentVersion.notes && (
-              <div className="pt-8 border-t-2 border-slate-100">
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600 mb-4">Chef's Notes</h3>
-                <div
-                  className="p-6 bg-amber-50 border-l-4 border-slate-900 rounded-r-xl text-sm text-slate-700 italic leading-relaxed relative"
-                >
-                  <Quote className="absolute top-3 left-3 w-6 h-6 text-amber-200" />
-                  <p className="relative z-10 pl-6">{currentVersion.notes}</p>
+              <div className="pt-6 border-t-2 border-slate-100">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600 mb-3">Chef's Notes</h3>
+                <div className="p-5 bg-amber-50 border-l-4 border-slate-900 rounded-r-xl text-sm text-slate-700 italic leading-relaxed relative">
+                  <Quote className="absolute top-3 left-3 w-5 h-5 text-amber-200" />
+                  <p className="relative z-10 pl-5">{currentVersion.notes}</p>
                 </div>
               </div>
             )}
