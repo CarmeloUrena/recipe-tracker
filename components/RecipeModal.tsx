@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Recipe, RecipeVersion } from '@/types';
-import { X, Trash2, Edit3, Plus, AlertCircle, Quote } from 'lucide-react';
+import { X, Trash2, Edit3, Plus, AlertCircle, Quote, AlertTriangle } from 'lucide-react';
 import RecipeForm from './RecipeForm';
 
 interface Props {
@@ -13,35 +13,66 @@ interface Props {
   onRefresh: () => void;
 }
 
+interface ConfirmDialog {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  danger?: boolean;
+  onConfirm: () => void;
+}
+
 export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Props) {
   const sortedVersions = [...recipe.versions].sort((a, b) => a.version_number - b.version_number);
 
   const [activeVersionIdx, setActiveVersionIdx] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [editMode, setEditMode] = useState<'overwrite' | 'new'>('overwrite');
+  const [confirm, setConfirm] = useState<ConfirmDialog | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const currentVersion = sortedVersions[activeVersionIdx];
 
-  const deleteEntireRecipe = async () => {
-    if (!confirm("Permanently delete this ENTIRE recipe and all versions?")) return;
-    const { error } = await supabase.from('recipes').delete().eq('id', recipe.id);
-    if (!error) {
-      onRefresh();
-      onClose();
-    }
+  const askConfirm = (dialog: ConfirmDialog) => setConfirm(dialog);
+  const dismissConfirm = () => setConfirm(null);
+
+  const deleteEntireRecipe = () => {
+    askConfirm({
+      title: 'Delete entire recipe?',
+      message: `"${recipe.name}" and all ${recipe.versions.length} version${recipe.versions.length !== 1 ? 's' : ''} will be permanently removed. This cannot be undone.`,
+      confirmLabel: 'Yes, delete everything',
+      danger: true,
+      onConfirm: async () => {
+        setDeleting(true);
+        const { error } = await supabase.from('recipes').delete().eq('id', recipe.id);
+        setDeleting(false);
+        if (!error) { onRefresh(); onClose(); }
+      }
+    });
   };
 
-  const deleteCurrentVersion = async () => {
+  const deleteCurrentVersion = () => {
     if (recipe.versions.length <= 1) {
-      alert("You cannot delete the only version. Delete the whole recipe instead.");
+      askConfirm({
+        title: 'Cannot delete only version',
+        message: 'This is the only version of this recipe. To remove it entirely, use the Delete Recipe button instead.',
+        confirmLabel: 'Got it',
+        danger: false,
+        onConfirm: dismissConfirm,
+      });
       return;
     }
-    if (!confirm(`Delete Version ${currentVersion.version_number}?`)) return;
-    const { error } = await supabase.from('recipe_versions').delete().eq('id', currentVersion.id);
-    if (!error) {
-      onRefresh();
-      setActiveVersionIdx(0);
-    }
+    askConfirm({
+      title: `Delete Version ${currentVersion.version_number}?`,
+      message: `Version ${currentVersion.version_number} will be permanently removed. The other versions will remain.`,
+      confirmLabel: 'Delete version',
+      danger: true,
+      onConfirm: async () => {
+        setDeleting(true);
+        const { error } = await supabase.from('recipe_versions').delete().eq('id', currentVersion.id);
+        setDeleting(false);
+        if (!error) { onRefresh(); setActiveVersionIdx(0); dismissConfirm(); }
+      }
+    });
   };
 
   if (!currentVersion) return null;
@@ -182,6 +213,52 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
           </div>
         </div>
       </div>
+
+      {/* Custom confirm dialog */}
+      {confirm && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={dismissConfirm} />
+          <div
+            className="relative w-full max-w-sm bg-white rounded-2xl border-2 border-slate-900 overflow-hidden"
+            style={{ boxShadow: '6px 6px 0 #0f172a' }}
+          >
+            {/* Dialog header */}
+            <div className={`px-6 py-5 border-b-2 border-slate-900 flex items-start gap-3 ${confirm.danger ? 'bg-red-50' : 'bg-[#f5f0e8]'}`}>
+              <AlertTriangle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${confirm.danger ? 'text-red-500' : 'text-amber-500'}`} />
+              <h3 className="font-semibold text-slate-900 text-base leading-snug">{confirm.title}</h3>
+            </div>
+
+            {/* Dialog body */}
+            <div className="px-6 py-5">
+              <p className="text-sm text-slate-600 leading-relaxed">{confirm.message}</p>
+            </div>
+
+            {/* Dialog actions */}
+            <div className="px-6 pb-6 flex gap-3 justify-end">
+              {confirm.danger && (
+                <button
+                  onClick={dismissConfirm}
+                  className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border-2 border-slate-300 rounded-xl hover:border-slate-900 transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                onClick={confirm.onConfirm}
+                disabled={deleting}
+                className={`px-5 py-2 text-sm font-semibold rounded-xl border-2 transition-colors disabled:opacity-50 ${
+                  confirm.danger
+                    ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
+                    : 'bg-slate-900 text-white border-slate-900 hover:bg-slate-700'
+                }`}
+                style={{ boxShadow: confirm.danger ? '3px 3px 0 #991b1b' : '3px 3px 0 rgba(0,0,0,0.2)' }}
+              >
+                {deleting ? 'Deleting...' : confirm.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isEditing && (
         <RecipeForm
