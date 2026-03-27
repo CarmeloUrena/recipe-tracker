@@ -6,8 +6,57 @@ import { supabase } from '@/lib/supabase';
 import { Recipe } from '@/types';
 import RecipeModal from '@/components/RecipeModal';
 import RecipeForm from '@/components/RecipeForm';
-import { Search, Plus, Edit3 } from 'lucide-react';
+import { Search, Plus, Edit3, X } from 'lucide-react';
 
+// ── About Modal ────────────────────────────────────────────
+function AboutModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
+
+      <div
+        className="relative w-full max-w-md bg-white rounded-2xl border-2 border-slate-900 flex flex-col overflow-hidden"
+        style={{ boxShadow: '8px 8px 0 #0f172a' }}
+      >
+        {/* Header */}
+        <div className="px-8 py-6 border-b-2 border-slate-900 bg-[#f5f0e8] flex items-start justify-between">
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Recipes.</h2>
+          <button
+            onClick={onClose}
+            className="p-2 border-2 border-slate-900 rounded-xl hover:bg-white transition-colors"
+            style={{ boxShadow: '2px 2px 0 #0f172a' }}
+          >
+            <X className="w-4 h-4 text-slate-600" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-8 py-8 space-y-5">
+          <p className="text-sm text-slate-700 leading-relaxed">
+            Recipes started because good food kept getting lost. Notes apps, group chats, scraps of
+            paper on the counter — nothing ever stayed in one place long enough to be useful.
+          </p>
+          <p className="text-sm text-slate-700 leading-relaxed">
+            This is the fix. A simple, private place for the recipes that matter — the ones passed
+            down, the ones still being worked out, and everything in between. Built for us, not for
+            anyone else.
+          </p>
+          <p className="text-sm text-slate-700 leading-relaxed">
+            Nothing here is polished for an audience. It's just real cooking, kept somewhere it won't
+            disappear.
+          </p>
+
+          {/* Sign-off */}
+          <div className="pt-3 border-t-2 border-slate-100">
+            <p className="text-sm text-slate-400 italic">Made with love.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ───────────────────────────────────────────────
 function RecipeApp() {
   const searchParams = useSearchParams();
   const isAdmin = searchParams.get('admin') === 'true';
@@ -16,6 +65,7 @@ function RecipeApp() {
   const [query, setQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   const fetchRecipes = useCallback(async () => {
     const { data: recipesData, error } = await supabase
@@ -62,9 +112,15 @@ function RecipeApp() {
         <header className="sticky top-0 z-30 bg-[#f5f0e8]/90 backdrop-blur-md pt-4 pb-5 md:pb-8 border-b-2 border-slate-900 mb-6 md:mb-12 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
           <div>
             <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Recipes.</h1>
-            <p className="text-slate-500 text-sm mt-1 font-medium">Your personal digital cookbook.</p>
+            <button
+              onClick={() => setShowAbout(true)}
+              className="text-slate-400 text-sm mt-1 font-medium hover:text-amber-600 transition-colors text-left"
+            >
+              Your personal digital cookbook.{' '}
+              <span className="underline underline-offset-2">About →</span>
+            </button>
           </div>
-          <div className="flex items-center gap-4 w-full md:max-w-md">
+          <div className="flex items-center gap-3 w-full md:max-w-md">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
               <input
@@ -144,7 +200,10 @@ function RecipeApp() {
         </div>
       </div>
 
-      {/* Modal view */}
+      {/* About modal */}
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+
+      {/* Recipe modal */}
       {selectedRecipe && !isAdding && (
         <RecipeModal
           recipe={selectedRecipe}
