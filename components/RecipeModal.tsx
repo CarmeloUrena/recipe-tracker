@@ -14,14 +14,12 @@ interface Props {
 }
 
 export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Props) {
-  // Sort versions ascending: v1, v2, v3...
   const sortedVersions = [...recipe.versions].sort((a, b) => a.version_number - b.version_number);
-  
-  // Default to Version 1 (index 0)
+
   const [activeVersionIdx, setActiveVersionIdx] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [editMode, setEditMode] = useState<'overwrite' | 'new'>('overwrite');
-  
+
   const currentVersion = sortedVersions[activeVersionIdx];
 
   const deleteEntireRecipe = async () => {
@@ -39,11 +37,10 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
       return;
     }
     if (!confirm(`Delete Version ${currentVersion.version_number}?`)) return;
-    
     const { error } = await supabase.from('recipe_versions').delete().eq('id', currentVersion.id);
     if (!error) {
       onRefresh();
-      setActiveVersionIdx(0); // Reset to v1 after deletion
+      setActiveVersionIdx(0);
     }
   };
 
@@ -51,140 +48,152 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" onClick={onClose} />
-      
-      <div className="relative w-full max-w-5xl max-h-[90vh] bg-white rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
-        
-        {/* Header Section */}
-        <div className="px-10 py-8 border-b border-slate-100 flex items-start justify-between bg-white sticky top-0 z-10">
+      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
+
+      <div
+        className="relative w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl border-2 border-slate-900 flex flex-col overflow-hidden"
+        style={{ boxShadow: '8px 8px 0 #0f172a' }}
+      >
+        {/* Header */}
+        <div className="px-10 py-7 border-b-2 border-slate-900 flex items-start justify-between bg-white sticky top-0 z-10">
           <div className="space-y-1">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-3xl font-semibold tracking-tight text-slate-900">{recipe.name}</h2>
-              <span className="px-2 py-1 bg-slate-100 rounded text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              <span className="px-2.5 py-1 bg-slate-900 text-white rounded-md text-[10px] font-bold uppercase tracking-widest">
                 v{currentVersion.version_number}
               </span>
             </div>
-            <p className="text-slate-400 text-sm font-medium italic">
+            <p className="text-slate-400 text-sm font-medium">
               Updated {new Date(currentVersion.created_at).toLocaleDateString()}
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {isAdmin && (
               <>
-                <button 
+                <button
                   onClick={() => { setEditMode('overwrite'); setIsEditing(true); }}
-                  className="p-3 bg-blue-50 text-blue-600 rounded-2xl hover:bg-blue-100 transition-colors"
+                  className="p-2.5 bg-white border-2 border-slate-900 rounded-xl hover:bg-amber-50 transition-colors"
+                  style={{ boxShadow: '2px 2px 0 #0f172a' }}
                   title="Edit This Version"
                 >
-                  <Edit3 className="w-5 h-5" />
+                  <Edit3 className="w-4 h-4 text-slate-700" />
                 </button>
-                <button 
+                <button
                   onClick={deleteCurrentVersion}
-                  className="p-3 bg-orange-50 text-orange-500 rounded-2xl hover:bg-orange-100 transition-colors"
+                  className="p-2.5 bg-white border-2 border-slate-900 rounded-xl hover:bg-orange-50 transition-colors"
+                  style={{ boxShadow: '2px 2px 0 #0f172a' }}
                   title="Delete This Version"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="w-4 h-4 text-slate-700" />
                 </button>
-                <div className="w-px h-8 bg-slate-100 mx-1" />
-                <button 
+                <div className="w-px h-7 bg-slate-200 mx-1" />
+                <button
                   onClick={deleteEntireRecipe}
-                  className="p-3 bg-red-50 text-red-500 rounded-2xl hover:bg-red-100 transition-colors"
+                  className="p-2.5 bg-white border-2 border-red-400 rounded-xl hover:bg-red-50 transition-colors"
+                  style={{ boxShadow: '2px 2px 0 #f87171' }}
                   title="Delete Entire Recipe"
                 >
-                  <AlertCircle className="w-5 h-5" />
+                  <AlertCircle className="w-4 h-4 text-red-500" />
                 </button>
               </>
             )}
-            <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-2xl transition-colors ml-2">
-              <X className="w-6 h-6 text-slate-400" />
+            <button
+              onClick={onClose}
+              className="p-2.5 border-2 border-slate-900 rounded-xl hover:bg-slate-50 transition-colors ml-1"
+              style={{ boxShadow: '2px 2px 0 #0f172a' }}
+            >
+              <X className="w-5 h-5 text-slate-600" />
             </button>
           </div>
         </div>
 
-        {/* Version Navigation Tabs */}
-        <div className="px-10 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between sticky top-[104px] z-10">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+        {/* Version tabs */}
+        <div className="px-10 py-3 bg-[#f5f0e8] border-b-2 border-slate-900 flex items-center justify-between sticky top-[104px] z-10">
+          <div className="flex gap-2 overflow-x-auto">
             {sortedVersions.map((v, idx) => (
               <button
                 key={v.id}
                 onClick={() => setActiveVersionIdx(idx)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  activeVersionIdx === idx 
-                  ? 'bg-slate-900 text-white shadow-md' 
-                  : 'text-slate-400 hover:bg-slate-200'
+                className={`px-4 py-1.5 rounded-md text-xs font-bold border-2 transition-all ${
+                  activeVersionIdx === idx
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'text-slate-500 border-slate-300 bg-white hover:border-slate-900'
                 }`}
+                style={activeVersionIdx === idx ? { boxShadow: '2px 2px 0 rgba(0,0,0,0.2)' } : {}}
               >
                 Version {v.version_number}
               </button>
             ))}
           </div>
-          
+
           {isAdmin && (
-            <button 
+            <button
               onClick={() => { setEditMode('new'); setIsEditing(true); }}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-all active:scale-95"
+              className="flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold text-white bg-slate-900 border-2 border-slate-900 hover:bg-slate-700 transition-colors"
+              style={{ boxShadow: '2px 2px 0 rgba(0,0,0,0.25)' }}
             >
               <Plus className="w-3.5 h-3.5" /> New Version
             </button>
           )}
         </div>
 
-        {/* Content Body */}
-        <div className="overflow-y-auto p-10 grid md:grid-cols-5 gap-16 flex-1">
-          
-          {/* Ingredients Column */}
+        {/* Content */}
+        <div className="overflow-y-auto p-10 grid md:grid-cols-5 gap-16 flex-1 bg-white">
+
+          {/* Ingredients */}
           <div className="md:col-span-2 space-y-6">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Ingredients</h3>
-            <ul className="space-y-4">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Ingredients</h3>
+            <ul className="space-y-3">
               {currentVersion.ingredients.map((ing, i) => (
-                <li key={i} className="flex items-start gap-3 text-slate-700 leading-relaxed">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-200 mt-2 flex-shrink-0" />
+                <li key={i} className="flex items-start gap-3 text-slate-700 leading-relaxed text-sm">
+                  <div className="w-1.5 h-1.5 rounded-full bg-slate-900 mt-2 flex-shrink-0" />
                   {ing}
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Directions & Notes Column */}
+          {/* Directions & Notes */}
           <div className="md:col-span-3 space-y-12">
-             <div className="space-y-6">
-                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Method</h3>
-                <div className="space-y-8">
-                  {currentVersion.directions.map((step, i) => (
-                    <div key={i} className="flex gap-6 group">
-                      <span className="text-4xl font-light text-slate-300 tabular-nums">
-                        {(i + 1).toString().padStart(2, '0')}
-                      </span>
-                      <p className="text-slate-700 leading-relaxed pt-2">{step}</p>
-                    </div>
-                  ))}
-                </div>
-             </div>
+            <div className="space-y-6">
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Method</h3>
+              <div className="space-y-8">
+                {currentVersion.directions.map((step, i) => (
+                  <div key={i} className="flex gap-6">
+                    <span className="text-4xl font-light text-slate-200 tabular-nums flex-shrink-0">
+                      {(i + 1).toString().padStart(2, '0')}
+                    </span>
+                    <p className="text-slate-700 leading-relaxed pt-2 text-sm">{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-             {/* Chef's Notes Section */}
-             {currentVersion.notes && (
-               <div className="pt-8 border-t border-slate-100">
-                 <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600 mb-4">Chef's Notes</h3>
-                 <div className="p-8 bg-slate-50 rounded-[2rem] text-sm text-slate-600 italic leading-relaxed relative overflow-hidden group">
-                   <Quote className="absolute -top-2 -left-2 w-12 h-12 text-slate-200 opacity-50 group-hover:text-blue-100 transition-colors" />
-                   <p className="relative z-10">{currentVersion.notes}</p>
-                 </div>
-               </div>
-             )}
+            {currentVersion.notes && (
+              <div className="pt-8 border-t-2 border-slate-100">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600 mb-4">Chef's Notes</h3>
+                <div
+                  className="p-6 bg-amber-50 border-l-4 border-slate-900 rounded-r-xl text-sm text-slate-700 italic leading-relaxed relative"
+                >
+                  <Quote className="absolute top-3 left-3 w-6 h-6 text-amber-200" />
+                  <p className="relative z-10 pl-6">{currentVersion.notes}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {isEditing && (
-        <RecipeForm 
-          recipe={recipe} 
-          activeVersion={editMode === 'overwrite' ? currentVersion : undefined} 
-          onClose={() => setIsEditing(false)} 
+        <RecipeForm
+          recipe={recipe}
+          activeVersion={editMode === 'overwrite' ? currentVersion : undefined}
+          onClose={() => setIsEditing(false)}
           onRefresh={() => {
             onRefresh();
             setIsEditing(false);
-          }} 
+          }}
         />
       )}
     </div>
