@@ -133,7 +133,7 @@ export default async function SharedRecipePage({ params, searchParams }: Props) 
 
         {/* Footer */}
         <div className="mt-16 pt-6 border-t-2 border-slate-200">
-          <p className="text-xs text-slate-400 italic">Shared from Recipes. — Made with love.</p>
+          <p className="text-xs text-slate-400 italic">Shared from Recipes. — Carmelo Ureña.</p>
         </div>
 
       </div>
