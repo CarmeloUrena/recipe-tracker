@@ -71,8 +71,8 @@ function RecipeApp() {
     const { data: recipesData, error } = await supabase
       .from('recipes')
       .select(`
-        id, name, origin, created_at,
-        recipe_versions ( id, recipe_id, version_number, ingredients, directions, notes, version_origin, created_at )
+        id, name, created_at,
+        recipe_versions ( id, recipe_id, version_number, ingredients, directions, notes, source_label, source_url, created_at )
       `)
       .order('name');
 
