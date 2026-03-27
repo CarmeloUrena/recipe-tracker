@@ -19,8 +19,8 @@ export default async function SharedRecipePage({ params, searchParams }: Props) 
   const { data: recipe, error } = await supabase
     .from('recipes')
     .select(`
-      id, name, origin, created_at,
-      recipe_versions ( id, recipe_id, version_number, ingredients, directions, notes, version_origin, created_at )
+      id, name, created_at,
+      recipe_versions ( id, recipe_id, version_number, ingredients, directions, notes, source_label, source_url, created_at )
     `)
     .eq('id', id)
     .single();
@@ -59,13 +59,23 @@ export default async function SharedRecipePage({ params, searchParams }: Props) 
               <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 leading-tight">
                 {recipe.name}
               </h1>
-              {/* Recipe-level origin */}
-              {recipe.origin && (
-                <p className="text-slate-400 text-sm italic">{recipe.origin}</p>
-              )}
-              {/* Version-level origin */}
-              {version.version_origin && version.version_origin !== recipe.origin && (
-                <p className="text-amber-500 text-xs italic">v{version.version_number}: {version.version_origin}</p>
+              {/* Source */}
+              {version.source_label && (
+                <p className="text-slate-400 text-xs font-medium mt-1">
+                  Source:{' '}
+                  {version.source_url ? (
+                    <a
+                      href={version.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amber-600 underline underline-offset-2 hover:text-amber-700 transition-colors"
+                    >
+                      {version.source_label}
+                    </a>
+                  ) : (
+                    <span className="text-slate-600 italic">{version.source_label}</span>
+                  )}
+                </p>
               )}
             </div>
             <span className="px-3 py-1.5 bg-slate-900 text-white rounded-md text-[10px] font-bold uppercase tracking-widest self-start mt-1">
@@ -100,7 +110,7 @@ export default async function SharedRecipePage({ params, searchParams }: Props) 
               <div className="space-y-4">
                 {version.directions.map((step: string, i: number) => (
                   <div key={i} className="flex gap-4">
-                    <span className="text-2xl font-light text-slate-200 tabular-nums flex-shrink-0 leading-snug mt-0.5">
+                    <span className="text-2xl font-light text-slate-400 tabular-nums flex-shrink-0 leading-snug mt-0.5">
                       {(i + 1).toString().padStart(2, '0')}
                     </span>
                     <p className="text-slate-700 leading-relaxed text-sm">{step}</p>
