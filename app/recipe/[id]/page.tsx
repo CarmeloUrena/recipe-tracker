@@ -83,7 +83,7 @@ export default async function SharedRecipePage({ params, searchParams }: Props) 
             </span>
           </div>
           <p className="text-slate-400 text-xs font-medium mt-3">
-            Updated {new Date(version.created_at).toLocaleDateString()}
+            Created {new Date(version.created_at).toLocaleDateString()}
           </p>
         </div>
 
