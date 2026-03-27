@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
+
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Recipes.",
@@ -13,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fafafa",
+  themeColor: "#f5f0e8",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -26,7 +29,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased selection:bg-blue-100 selection:text-blue-900">
+      <body className={`${spaceGrotesk.className} antialiased selection:bg-amber-100 selection:text-amber-900`}>
         {children}
       </body>
     </html>
