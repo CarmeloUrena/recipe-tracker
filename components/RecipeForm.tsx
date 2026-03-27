@@ -14,6 +14,8 @@ interface Props {
 
 export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }: Props) {
   const [name, setName] = useState(recipe?.name || '');
+  const [origin, setOrigin] = useState(recipe?.origin || '');
+  const [versionOrigin, setVersionOrigin] = useState(activeVersion?.version_origin || '');
   const [ingredients, setIngredients] = useState<string[]>(['']);
   const [directions, setDirections] = useState<string[]>(['']);
   const [notes, setNotes] = useState('');
@@ -24,11 +26,13 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
       setIngredients(activeVersion.ingredients);
       setDirections(activeVersion.directions);
       setNotes(activeVersion.notes || '');
+      setVersionOrigin(activeVersion.version_origin || '');
     } else if (recipe && recipe.versions.length > 0) {
       const latest = [...recipe.versions].sort((a, b) => b.version_number - a.version_number)[0];
       setIngredients(latest.ingredients);
       setDirections(latest.directions);
       setNotes('');
+      setVersionOrigin('');
     }
   }, [activeVersion, recipe]);
 
@@ -36,36 +40,48 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
   const updateItem = (setter: any, index: number, value: string) => {
     setter((prev: string[]) => { const next = [...prev]; next[index] = value; return next; });
   };
-  const removeItem = (setter: any, index: number) => setter((prev: string[]) => prev.filter((_, i) => i !== index));
+  const removeItem = (setter: any, index: number) =>
+    setter((prev: string[]) => prev.filter((_, i) => i !== index));
 
   const handleSave = async () => {
-    if (!name.trim()) return alert("Name required");
+    if (!name.trim()) return alert('Name required');
     setLoading(true);
     try {
       let recipeId = recipe?.id;
 
       if (!recipeId) {
-        const { data: newR } = await supabase.from('recipes').insert([{ name }]).select().single();
+        const { data: newR } = await supabase
+          .from('recipes')
+          .insert([{ name, origin: origin.trim() || null }])
+          .select()
+          .single();
         recipeId = newR.id;
       } else {
-        await supabase.from('recipes').update({ name }).eq('id', recipeId);
+        await supabase
+          .from('recipes')
+          .update({ name, origin: origin.trim() || null })
+          .eq('id', recipeId);
       }
 
       const versionPayload = {
         ingredients: ingredients.filter(i => i.trim() !== ''),
         directions: directions.filter(d => d.trim() !== ''),
-        notes
+        notes,
+        version_origin: versionOrigin.trim() || null,
       };
 
       if (activeVersion) {
-        await supabase.from('recipe_versions').update({
-          ingredients: ingredients.filter(i => i.trim() !== ''),
-          directions: directions.filter(d => d.trim() !== ''),
-          notes
-        }).eq('id', activeVersion.id);
+        await supabase
+          .from('recipe_versions')
+          .update(versionPayload)
+          .eq('id', activeVersion.id);
       } else {
-        const nextVer = recipe ? Math.max(...recipe.versions.map(v => v.version_number)) + 1 : 1;
-        await supabase.from('recipe_versions').insert([{ ...versionPayload, recipe_id: recipeId, version_number: nextVer }]);
+        const nextVer = recipe
+          ? Math.max(...recipe.versions.map(v => v.version_number)) + 1
+          : 1;
+        await supabase
+          .from('recipe_versions')
+          .insert([{ ...versionPayload, recipe_id: recipeId, version_number: nextVer }]);
       }
 
       onRefresh();
@@ -84,7 +100,7 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
         className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl border-2 border-slate-900 flex flex-col overflow-hidden"
         style={{ boxShadow: '8px 8px 0 #0f172a' }}
       >
-        {/* Form header */}
+        {/* Header */}
         <div className="px-8 py-5 border-b-2 border-slate-900 flex items-center justify-between bg-[#f5f0e8]">
           <h2 className="text-xl font-semibold text-slate-900">
             {activeVersion ? `Editing Version ${activeVersion.version_number}` : 'New Version'}
@@ -99,6 +115,7 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
         </div>
 
         <div className="overflow-y-auto p-8 space-y-8 bg-white">
+
           {/* Title */}
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Title</label>
@@ -109,6 +126,34 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
               placeholder="Recipe name..."
             />
             <div className="h-0.5 bg-slate-900 w-full" />
+          </div>
+
+          {/* Origin fields — side by side on desktop */}
+          <div className="grid md:grid-cols-2 gap-6 p-5 bg-slate-50 rounded-xl border-2 border-slate-200">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
+                Recipe Origin
+              </label>
+              <input
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value)}
+                className="w-full text-sm italic text-slate-600 bg-transparent border-none focus:ring-0 p-0 outline-none placeholder:text-slate-300 placeholder:not-italic"
+                placeholder="e.g. Grandma's kitchen, NYT adapted..."
+              />
+              <p className="text-[10px] text-slate-400">Applies to all versions of this recipe</p>
+            </div>
+            <div className="space-y-1.5 md:border-l-2 md:border-slate-200 md:pl-6">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
+                Version Origin
+              </label>
+              <input
+                value={versionOrigin}
+                onChange={(e) => setVersionOrigin(e.target.value)}
+                className="w-full text-sm italic text-slate-600 bg-transparent border-none focus:ring-0 p-0 outline-none placeholder:text-slate-300 placeholder:not-italic"
+                placeholder="e.g. Adapted from Ottolenghi, that trip to Lisbon..."
+              />
+              <p className="text-[10px] text-slate-400">Specific to this version only</p>
+            </div>
           </div>
 
           {/* Ingredients + Method */}
@@ -132,7 +177,7 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
             />
           </div>
 
-          {/* Notes */}
+          {/* Chef's Notes */}
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Chef's Notes</label>
             <textarea
@@ -199,7 +244,7 @@ function Section({ label, items, setter, addItem, updateItem, removeItem, isText
             )}
             <button
               onClick={() => removeItem(setter, i)}
-              className="p-2 text-slate-300 hover:text-red-500 hover:border-red-300 border-2 border-transparent rounded-lg transition-colors mt-0.5"
+              className="p-2 text-slate-300 hover:text-red-500 border-2 border-transparent rounded-lg transition-colors mt-0.5"
             >
               <Trash2 className="w-4 h-4" />
             </button>
