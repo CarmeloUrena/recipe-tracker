@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Recipe, RecipeVersion } from '@/types';
-import { X, Trash2, Edit3, Plus, AlertCircle, Quote, AlertTriangle } from 'lucide-react';
+import { X, Trash2, Edit3, Plus, AlertCircle, Quote, AlertTriangle, ChefHat, Link, Check } from 'lucide-react';
 import RecipeForm from './RecipeForm';
 
 interface Props {
@@ -21,6 +21,104 @@ interface ConfirmDialog {
   onConfirm: () => void;
 }
 
+// ── Cook Mode — clean full-screen read view ────────────────
+function CookMode({ recipe, version, onClose }: { recipe: Recipe; version: RecipeVersion; onClose: () => void }) {
+  const [showIngredients, setShowIngredients] = useState(true);
+
+  return (
+    <div
+      className="fixed inset-0 z-[90] flex flex-col"
+      style={{
+        background: '#f5f0e8',
+        backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b-2 border-slate-900 bg-[#f5f0e8]/90 backdrop-blur-md sticky top-0">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Cook Mode</p>
+          <h2 className="text-lg font-semibold text-slate-900 leading-tight">{recipe.name}</h2>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowIngredients(v => !v)}
+            className={`px-4 py-2 text-xs font-bold border-2 border-slate-900 rounded-xl transition-colors ${
+              showIngredients ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-amber-50'
+            }`}
+            style={{ boxShadow: '2px 2px 0 #0f172a' }}
+          >
+            Ingredients
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 border-2 border-slate-900 rounded-xl bg-white hover:bg-slate-50 transition-colors"
+            style={{ boxShadow: '2px 2px 0 #0f172a' }}
+          >
+            <X className="w-4 h-4 text-slate-700" />
+          </button>
+        </div>
+      </div>
+
+      {/* Scrollable body */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto w-full px-6 py-10 space-y-12">
+
+          {/* Ingredients */}
+          {showIngredients && (
+            <section className="space-y-4">
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Ingredients</h3>
+              <ul className="space-y-3">
+                {version.ingredients.map((ing, i) => (
+                  <li key={i} className="flex items-start gap-3 text-slate-700 leading-relaxed text-base">
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-900 mt-2.5 flex-shrink-0" />
+                    {ing}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* Divider between sections */}
+          {showIngredients && (
+            <div className="border-t-2 border-slate-200" />
+          )}
+
+          {/* Method */}
+          <section className="space-y-6">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Method</h3>
+            <div className="space-y-8">
+              {version.directions.map((step, i) => (
+                <div key={i} className="flex gap-5">
+                  <span className="text-3xl font-light text-slate-200 tabular-nums flex-shrink-0 leading-snug mt-0.5">
+                    {(i + 1).toString().padStart(2, '0')}
+                  </span>
+                  <p className="text-slate-800 leading-relaxed text-base">{step}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Chef's notes */}
+          {version.notes && (
+            <section className="space-y-3">
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Chef's Notes</h3>
+              <div className="p-5 bg-amber-50 border-l-4 border-slate-900 rounded-r-xl text-base text-slate-700 italic leading-relaxed relative">
+                <Quote className="absolute top-3 left-3 w-5 h-5 text-amber-200" />
+                <p className="relative z-10 pl-5">{version.notes}</p>
+              </div>
+            </section>
+          )}
+
+          {/* Bottom breathing room */}
+          <div className="h-10" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Recipe Modal ───────────────────────────────────────────
 export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Props) {
   const sortedVersions = [...recipe.versions].sort((a, b) => a.version_number - b.version_number);
 
@@ -29,11 +127,21 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
   const [editMode, setEditMode] = useState<'overwrite' | 'new'>('overwrite');
   const [confirm, setConfirm] = useState<ConfirmDialog | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [cookMode, setCookMode] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const currentVersion = sortedVersions[activeVersionIdx];
 
   const askConfirm = (dialog: ConfirmDialog) => setConfirm(dialog);
   const dismissConfirm = () => setConfirm(null);
+
+  const handleCopyLink = useCallback(() => {
+    const url = `${window.location.origin}/recipe/${recipe.id}?v=${currentVersion.version_number}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [recipe.id, currentVersion.version_number]);
 
   const deleteEntireRecipe = () => {
     askConfirm({
@@ -46,7 +154,7 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
         const { error } = await supabase.from('recipes').delete().eq('id', recipe.id);
         setDeleting(false);
         if (!error) { onRefresh(); onClose(); }
-      }
+      },
     });
   };
 
@@ -54,7 +162,7 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
     if (recipe.versions.length <= 1) {
       askConfirm({
         title: 'Cannot delete only version',
-        message: 'This is the only version of this recipe. To remove it entirely, use the Delete Recipe button instead.',
+        message: 'This is the only version. To remove it entirely, use the Delete Recipe button instead.',
         confirmLabel: 'Got it',
         danger: false,
         onConfirm: dismissConfirm,
@@ -71,11 +179,15 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
         const { error } = await supabase.from('recipe_versions').delete().eq('id', currentVersion.id);
         setDeleting(false);
         if (!error) { onRefresh(); setActiveVersionIdx(0); dismissConfirm(); }
-      }
+      },
     });
   };
 
   if (!currentVersion) return null;
+
+  if (cookMode) {
+    return <CookMode recipe={recipe} version={currentVersion} onClose={() => setCookMode(false)} />;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -87,19 +199,53 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
       >
         {/* Header */}
         <div className="px-5 md:px-10 py-5 md:py-7 border-b-2 border-slate-900 flex items-start justify-between bg-white sticky top-0 z-10">
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-xl md:text-3xl font-semibold tracking-tight text-slate-900">{recipe.name}</h2>
               <span className="px-2.5 py-1 bg-slate-900 text-white rounded-md text-[10px] font-bold uppercase tracking-widest">
                 v{currentVersion.version_number}
               </span>
             </div>
-            <p className="text-slate-400 text-sm font-medium">
+            {/* Recipe-level origin */}
+            {recipe.origin && (
+              <p className="text-slate-400 text-sm italic">{recipe.origin}</p>
+            )}
+            {/* Version-level origin — only shown if different from recipe origin */}
+            {currentVersion.version_origin && currentVersion.version_origin !== recipe.origin && (
+              <p className="text-amber-500 text-xs italic">v{currentVersion.version_number}: {currentVersion.version_origin}</p>
+            )}
+            <p className="text-slate-400 text-xs font-medium pt-0.5">
               Updated {new Date(currentVersion.created_at).toLocaleDateString()}
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {/* Cook mode */}
+            <button
+              onClick={() => setCookMode(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border-2 border-amber-400 rounded-xl hover:bg-amber-100 transition-colors text-amber-700 text-xs font-bold"
+              style={{ boxShadow: '2px 2px 0 #b45309' }}
+              title="Cook Mode"
+            >
+              <ChefHat className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Cook</span>
+            </button>
+
+            {/* Share */}
+            <button
+              onClick={handleCopyLink}
+              className={`flex items-center gap-1.5 px-3 py-2 border-2 rounded-xl transition-colors text-xs font-bold ${
+                copied
+                  ? 'bg-green-50 border-green-400 text-green-700'
+                  : 'bg-white border-slate-900 text-slate-700 hover:bg-slate-50'
+              }`}
+              style={{ boxShadow: copied ? '2px 2px 0 #15803d' : '2px 2px 0 #0f172a' }}
+              title="Copy shareable link"
+            >
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Link className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
+            </button>
+
             {isAdmin && (
               <>
                 <button
@@ -214,7 +360,7 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
         </div>
       </div>
 
-      {/* Custom confirm dialog */}
+      {/* Confirm dialog */}
       {confirm && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={dismissConfirm} />
@@ -222,18 +368,13 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
             className="relative w-full max-w-sm bg-white rounded-2xl border-2 border-slate-900 overflow-hidden"
             style={{ boxShadow: '6px 6px 0 #0f172a' }}
           >
-            {/* Dialog header */}
             <div className={`px-6 py-5 border-b-2 border-slate-900 flex items-start gap-3 ${confirm.danger ? 'bg-red-50' : 'bg-[#f5f0e8]'}`}>
               <AlertTriangle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${confirm.danger ? 'text-red-500' : 'text-amber-500'}`} />
               <h3 className="font-semibold text-slate-900 text-base leading-snug">{confirm.title}</h3>
             </div>
-
-            {/* Dialog body */}
             <div className="px-6 py-5">
               <p className="text-sm text-slate-600 leading-relaxed">{confirm.message}</p>
             </div>
-
-            {/* Dialog actions */}
             <div className="px-6 pb-6 flex gap-3 justify-end">
               {confirm.danger && (
                 <button
