@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Recipe, RecipeVersion } from '@/types';
-import { X, Plus, Trash2, Save } from 'lucide-react';
+import { X, Plus, Trash2 } from 'lucide-react';
 
 interface Props {
-  recipe?: Recipe; 
-  activeVersion?: RecipeVersion; 
+  recipe?: Recipe;
+  activeVersion?: RecipeVersion;
   onClose: () => void;
   onRefresh: () => void;
 }
@@ -21,16 +21,14 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
 
   useEffect(() => {
     if (activeVersion) {
-      // MODE: OVERWRITE EXISTING
       setIngredients(activeVersion.ingredients);
       setDirections(activeVersion.directions);
       setNotes(activeVersion.notes || '');
     } else if (recipe && recipe.versions.length > 0) {
-      // MODE: NEW VERSION (Template from latest)
-      const latest = [...recipe.versions].sort((a,b) => b.version_number - a.version_number)[0];
+      const latest = [...recipe.versions].sort((a, b) => b.version_number - a.version_number)[0];
       setIngredients(latest.ingredients);
       setDirections(latest.directions);
-      setNotes(''); // Clear notes for fresh start
+      setNotes('');
     }
   }, [activeVersion, recipe]);
 
@@ -43,11 +41,9 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
   const handleSave = async () => {
     if (!name.trim()) return alert("Name required");
     setLoading(true);
-
     try {
       let recipeId = recipe?.id;
 
-      // 1. Sync Recipe Name
       if (!recipeId) {
         const { data: newR } = await supabase.from('recipes').insert([{ name }]).select().single();
         recipeId = newR.id;
@@ -62,14 +58,12 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
       };
 
       if (activeVersion) {
-        // OVERWRITE vX
         await supabase.from('recipe_versions').update({
           ingredients: ingredients.filter(i => i.trim() !== ''),
           directions: directions.filter(d => d.trim() !== ''),
-          notes // <--- Ensure this is here!
+          notes
         }).eq('id', activeVersion.id);
       } else {
-        // CREATE v(Latest + 1)
         const nextVer = recipe ? Math.max(...recipe.versions.map(v => v.version_number)) + 1 : 1;
         await supabase.from('recipe_versions').insert([{ ...versionPayload, recipe_id: recipeId, version_number: nextVer }]);
       }
@@ -85,34 +79,87 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={onClose} />
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
-        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">
+      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl border-2 border-slate-900 flex flex-col overflow-hidden"
+        style={{ boxShadow: '8px 8px 0 #0f172a' }}
+      >
+        {/* Form header */}
+        <div className="px-8 py-5 border-b-2 border-slate-900 flex items-center justify-between bg-[#f5f0e8]">
+          <h2 className="text-xl font-semibold text-slate-900">
             {activeVersion ? `Editing Version ${activeVersion.version_number}` : 'New Version'}
           </h2>
-          <button onClick={onClose} className="p-2"><X className="w-6 h-6 text-slate-400" /></button>
+          <button
+            onClick={onClose}
+            className="p-2 border-2 border-slate-900 rounded-xl hover:bg-white transition-colors"
+            style={{ boxShadow: '2px 2px 0 #0f172a' }}
+          >
+            <X className="w-5 h-5 text-slate-600" />
+          </button>
         </div>
-        
-        <div className="overflow-y-auto p-8 space-y-8">
+
+        <div className="overflow-y-auto p-8 space-y-8 bg-white">
+          {/* Title */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Title</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full text-3xl font-medium border-none focus:ring-0 p-0 outline-none" />
+            <label className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Title</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full text-3xl font-semibold border-none focus:ring-0 p-0 outline-none bg-transparent text-slate-900 placeholder:text-slate-300"
+              placeholder="Recipe name..."
+            />
+            <div className="h-0.5 bg-slate-900 w-full" />
           </div>
+
+          {/* Ingredients + Method */}
           <div className="grid md:grid-cols-2 gap-12">
-            <Section label="Ingredients" items={ingredients} setter={setIngredients} addItem={addItem} updateItem={updateItem} removeItem={removeItem} />
-            <Section label="Method" items={directions} setter={setDirections} addItem={addItem} updateItem={updateItem} removeItem={removeItem} isTextArea />
+            <Section
+              label="Ingredients"
+              items={ingredients}
+              setter={setIngredients}
+              addItem={addItem}
+              updateItem={updateItem}
+              removeItem={removeItem}
+            />
+            <Section
+              label="Method"
+              items={directions}
+              setter={setDirections}
+              addItem={addItem}
+              updateItem={updateItem}
+              removeItem={removeItem}
+              isTextArea
+            />
           </div>
+
+          {/* Notes */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Notes</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full text-sm bg-slate-50 border-none rounded-2xl p-4 outline-none" />
+            <label className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Chef's Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Any tips, variations, or reminders..."
+              className="w-full text-sm bg-amber-50 border-2 border-slate-200 rounded-xl p-4 outline-none focus:border-slate-900 transition-colors resize-none placeholder:text-slate-300"
+            />
           </div>
         </div>
 
-        <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-4">
-          <button onClick={onClose} className="px-6 py-2.5 text-sm font-medium text-slate-500">Cancel</button>
-          <button onClick={handleSave} disabled={loading} className="px-8 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 shadow-lg">
-            {loading ? 'Saving...' : activeVersion ? 'Overwrite Current Version' : 'Create New Version'}
+        {/* Footer */}
+        <div className="px-8 py-5 bg-[#f5f0e8] border-t-2 border-slate-900 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 text-sm font-semibold text-slate-600 border-2 border-slate-300 rounded-xl hover:border-slate-900 transition-colors bg-white"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="px-7 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-700 border-2 border-slate-900 disabled:opacity-50"
+            style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.2)' }}
+          >
+            {loading ? 'Saving...' : activeVersion ? 'Overwrite Version' : 'Create New Version'}
           </button>
         </div>
       </div>
@@ -124,18 +171,38 @@ function Section({ label, items, setter, addItem, updateItem, removeItem, isText
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-bold uppercase tracking-widest text-slate-400">{label}</label>
-        <button onClick={() => addItem(setter)} className="text-blue-600"><Plus className="w-4 h-4" /></button>
+        <label className="text-[10px] font-bold uppercase tracking-widest text-amber-600">{label}</label>
+        <button
+          onClick={() => addItem(setter)}
+          className="p-1.5 border-2 border-slate-900 rounded-lg hover:bg-slate-900 hover:text-white text-slate-700 transition-colors"
+          style={{ boxShadow: '2px 2px 0 #0f172a' }}
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
       </div>
       <div className="space-y-3">
         {items.map((item: string, i: number) => (
-          <div key={i} className="flex gap-2">
+          <div key={i} className="flex gap-2 items-start">
             {isTextArea ? (
-              <textarea value={item} onChange={(e) => updateItem(setter, i, e.target.value)} rows={1} className="flex-1 text-sm bg-slate-50 border-none rounded-lg p-2 outline-none resize-none" />
+              <textarea
+                value={item}
+                onChange={(e) => updateItem(setter, i, e.target.value)}
+                rows={2}
+                className="flex-1 text-sm bg-slate-50 border-2 border-slate-200 rounded-lg p-2.5 outline-none focus:border-slate-900 transition-colors resize-none"
+              />
             ) : (
-              <input value={item} onChange={(e) => updateItem(setter, i, e.target.value)} className="flex-1 text-sm bg-slate-50 border-none rounded-lg p-2 outline-none" />
+              <input
+                value={item}
+                onChange={(e) => updateItem(setter, i, e.target.value)}
+                className="flex-1 text-sm bg-slate-50 border-2 border-slate-200 rounded-lg p-2.5 outline-none focus:border-slate-900 transition-colors"
+              />
             )}
-            <button onClick={() => removeItem(setter, i)} className="p-2 text-slate-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+            <button
+              onClick={() => removeItem(setter, i)}
+              className="p-2 text-slate-300 hover:text-red-500 hover:border-red-300 border-2 border-transparent rounded-lg transition-colors mt-0.5"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         ))}
       </div>
