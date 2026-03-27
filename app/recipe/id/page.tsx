@@ -8,18 +8,21 @@ const supabase = createClient(
 );
 
 interface Props {
-  params: { id: string };
-  searchParams: { v?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ v?: string }>;
 }
 
 export default async function SharedRecipePage({ params, searchParams }: Props) {
+  const { id } = await params;
+  const { v } = await searchParams;
+
   const { data: recipe, error } = await supabase
     .from('recipes')
     .select(`
       id, name, origin, created_at,
       recipe_versions ( id, recipe_id, version_number, ingredients, directions, notes, version_origin, created_at )
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (error || !recipe) notFound();
@@ -28,7 +31,7 @@ export default async function SharedRecipePage({ params, searchParams }: Props) 
     (a: any, b: any) => a.version_number - b.version_number
   );
 
-  const requestedVersion = searchParams.v ? parseInt(searchParams.v) : null;
+  const requestedVersion = v ? parseInt(v) : null;
   const version = requestedVersion
     ? versions.find((v: any) => v.version_number === requestedVersion) ?? versions[versions.length - 1]
     : versions[versions.length - 1];
