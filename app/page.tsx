@@ -34,10 +34,10 @@ function AboutModal({ onClose }: { onClose: () => void }) {
         <div className="px-8 py-8 space-y-5">
           <p className="text-sm text-slate-700 leading-relaxed">
             Recipes started because good food kept getting lost. Notes apps, group chats, scraps of
-            paper on the counter. Nothing ever stayed in one place long enough to be useful.
+            paper on the counter — nothing ever stayed in one place long enough to be useful.
           </p>
           <p className="text-sm text-slate-700 leading-relaxed">
-            This is the fix. A simple, private place for the recipes that matter. The ones passed
+            This is the fix. A simple, private place for the recipes that matter — the ones passed
             down, the ones still being worked out, and everything in between. Built for us, not for
             anyone else.
           </p>
@@ -48,7 +48,7 @@ function AboutModal({ onClose }: { onClose: () => void }) {
 
           {/* Sign-off */}
           <div className="pt-3 border-t-2 border-slate-100">
-            <p className="text-sm text-slate-400 italic">Carmelo Ureña</p>
+            <p className="text-sm text-slate-400 italic">Made with love.</p>
           </div>
         </div>
       </div>
@@ -71,8 +71,8 @@ function RecipeApp() {
     const { data: recipesData, error } = await supabase
       .from('recipes')
       .select(`
-        id, name, created_at,
-        recipe_versions ( id, recipe_id, version_number, ingredients, directions, notes, created_at )
+        id, name, origin, created_at,
+        recipe_versions ( id, recipe_id, version_number, ingredients, directions, notes, version_origin, created_at )
       `)
       .order('name');
 
