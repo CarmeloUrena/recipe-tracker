@@ -14,8 +14,8 @@ interface Props {
 
 export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }: Props) {
   const [name, setName] = useState(recipe?.name || '');
-  const [origin, setOrigin] = useState(recipe?.origin || '');
-  const [versionOrigin, setVersionOrigin] = useState(activeVersion?.version_origin || '');
+  const [sourceLabel, setSourceLabel] = useState(activeVersion?.source_label || '');
+  const [sourceUrl, setSourceUrl] = useState(activeVersion?.source_url || '');
   const [ingredients, setIngredients] = useState<string[]>(['']);
   const [directions, setDirections] = useState<string[]>(['']);
   const [notes, setNotes] = useState('');
@@ -26,13 +26,15 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
       setIngredients(activeVersion.ingredients);
       setDirections(activeVersion.directions);
       setNotes(activeVersion.notes || '');
-      setVersionOrigin(activeVersion.version_origin || '');
+      setSourceLabel(activeVersion.source_label || '');
+      setSourceUrl(activeVersion.source_url || '');
     } else if (recipe && recipe.versions.length > 0) {
       const latest = [...recipe.versions].sort((a, b) => b.version_number - a.version_number)[0];
       setIngredients(latest.ingredients);
       setDirections(latest.directions);
       setNotes('');
-      setVersionOrigin('');
+      setSourceLabel('');
+      setSourceUrl('');
     }
   }, [activeVersion, recipe]);
 
@@ -52,29 +54,24 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
       if (!recipeId) {
         const { data: newR } = await supabase
           .from('recipes')
-          .insert([{ name, origin: origin.trim() || null }])
+          .insert([{ name }])
           .select()
           .single();
         recipeId = newR.id;
       } else {
-        await supabase
-          .from('recipes')
-          .update({ name, origin: origin.trim() || null })
-          .eq('id', recipeId);
+        await supabase.from('recipes').update({ name }).eq('id', recipeId);
       }
 
       const versionPayload = {
         ingredients: ingredients.filter(i => i.trim() !== ''),
         directions: directions.filter(d => d.trim() !== ''),
         notes,
-        version_origin: versionOrigin.trim() || null,
+        source_label: sourceLabel.trim() || null,
+        source_url: sourceUrl.trim() || null,
       };
 
       if (activeVersion) {
-        await supabase
-          .from('recipe_versions')
-          .update(versionPayload)
-          .eq('id', activeVersion.id);
+        await supabase.from('recipe_versions').update(versionPayload).eq('id', activeVersion.id);
       } else {
         const nextVer = recipe
           ? Math.max(...recipe.versions.map(v => v.version_number)) + 1
@@ -128,31 +125,28 @@ export default function RecipeForm({ recipe, activeVersion, onClose, onRefresh }
             <div className="h-0.5 bg-slate-900 w-full" />
           </div>
 
-          {/* Origin fields — side by side on desktop */}
-          <div className="grid md:grid-cols-2 gap-6 p-5 bg-slate-50 rounded-xl border-2 border-slate-200">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
-                Recipe Origin
-              </label>
-              <input
-                value={origin}
-                onChange={(e) => setOrigin(e.target.value)}
-                className="w-full text-sm italic text-slate-600 bg-transparent border-none focus:ring-0 p-0 outline-none placeholder:text-slate-300 placeholder:not-italic"
-                placeholder="e.g. Grandma's kitchen, NYT adapted..."
-              />
-              <p className="text-[10px] text-slate-400">Applies to all versions of this recipe</p>
-            </div>
-            <div className="space-y-1.5 md:border-l-2 md:border-slate-200 md:pl-6">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
-                Version Origin
-              </label>
-              <input
-                value={versionOrigin}
-                onChange={(e) => setVersionOrigin(e.target.value)}
-                className="w-full text-sm italic text-slate-600 bg-transparent border-none focus:ring-0 p-0 outline-none placeholder:text-slate-300 placeholder:not-italic"
-                placeholder="e.g. Adapted from Ottolenghi, that trip to Lisbon..."
-              />
-              <p className="text-[10px] text-slate-400">Specific to this version only</p>
+          {/* Source */}
+          <div className="space-y-3 p-5 bg-slate-50 rounded-xl border-2 border-slate-200">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Source</label>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <input
+                  value={sourceLabel}
+                  onChange={(e) => setSourceLabel(e.target.value)}
+                  className="w-full text-sm text-slate-700 bg-white border-2 border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-slate-900 transition-colors placeholder:text-slate-300"
+                  placeholder="e.g. NYT Cooking, Grandma's kitchen..."
+                />
+                <p className="text-[10px] text-slate-400 px-1">Label — always shown</p>
+              </div>
+              <div className="space-y-1">
+                <input
+                  value={sourceUrl}
+                  onChange={(e) => setSourceUrl(e.target.value)}
+                  className="w-full text-sm text-slate-700 bg-white border-2 border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-slate-900 transition-colors placeholder:text-slate-300"
+                  placeholder="https://... (optional)"
+                />
+                <p className="text-[10px] text-slate-400 px-1">URL — makes the label a link</p>
+              </div>
             </div>
           </div>
 
