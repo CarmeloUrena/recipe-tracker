@@ -190,15 +190,15 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4">
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
 
       <div
-        className="relative w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl border-2 border-slate-900 flex flex-col overflow-hidden"
+        className="relative w-full md:max-w-5xl h-[92vh] md:h-auto md:max-h-[90vh] bg-white rounded-t-2xl md:rounded-2xl border-2 border-b-0 md:border-b-2 border-slate-900 flex flex-col overflow-hidden"
         style={{ boxShadow: '8px 8px 0 #0f172a' }}
       >
         {/* Header */}
-        <div className="px-5 md:px-10 py-5 md:py-7 border-b-2 border-slate-900 flex items-start justify-between bg-white sticky top-0 z-10">
+        <div className="px-4 md:px-10 py-4 md:py-7 border-b-2 border-slate-900 flex items-start justify-between bg-white sticky top-0 z-10">
           <div className="space-y-0.5">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-xl md:text-3xl font-semibold tracking-tight text-slate-900">{recipe.name}</h2>
@@ -229,7 +229,7 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0 justify-end">
             {/* Cook mode */}
             <button
               onClick={() => setCookMode(true)}
@@ -296,7 +296,7 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
         </div>
 
         {/* Version tabs */}
-        <div className="px-5 md:px-10 py-3 bg-[#f5f0e8] border-b-2 border-slate-900 flex items-center justify-between sticky top-[88px] md:top-[104px] z-10">
+        <div className="px-4 md:px-10 py-3 bg-[#f5f0e8] border-b-2 border-slate-900 flex items-center justify-between sticky top-[80px] md:top-[104px] z-10">
           <div className="flex gap-2 overflow-x-auto">
             {sortedVersions.map((v, idx) => (
               <button
@@ -326,10 +326,10 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto p-5 md:p-10 grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-16 flex-1 bg-white">
+        <div className="overflow-y-auto p-4 md:p-10 grid grid-cols-1 md:grid-cols-5 gap-0 md:gap-16 flex-1 bg-white">
 
           {/* Ingredients */}
-          <div className="md:col-span-2 space-y-4">
+          <div className="md:col-span-2 space-y-3 pb-6 md:pb-0 border-b-2 md:border-b-0 border-slate-100">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Ingredients</h3>
             <ul className="space-y-2">
               {currentVersion.ingredients.map((ing, i) => (
@@ -342,13 +342,13 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
           </div>
 
           {/* Directions & Notes */}
-          <div className="md:col-span-3 space-y-8">
+          <div className="md:col-span-3 space-y-8 pt-6 md:pt-0">
             <div className="space-y-4">
               <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Method</h3>
               <div className="space-y-4">
                 {currentVersion.directions.map((step, i) => (
-                  <div key={i} className="flex gap-4">
-                    <span className="text-2xl font-light text-slate-400 tabular-nums flex-shrink-0 leading-snug mt-0.5">
+                  <div key={i} className="flex gap-3 md:gap-4">
+                    <span className="text-lg md:text-2xl font-light text-slate-400 tabular-nums flex-shrink-0 leading-snug mt-0.5 min-w-[28px] md:min-w-0">
                       {(i + 1).toString().padStart(2, '0')}
                     </span>
                     <p className="text-slate-700 leading-relaxed text-sm">{step}</p>
