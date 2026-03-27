@@ -225,7 +225,7 @@ export default function RecipeModal({ recipe, onClose, isAdmin, onRefresh }: Pro
               </p>
             )}
             <p className="text-slate-400 text-xs font-medium pt-0.5">
-              Updated {new Date(currentVersion.created_at).toLocaleDateString()}
+              Created {new Date(currentVersion.created_at).toLocaleDateString()}
             </p>
           </div>
 
